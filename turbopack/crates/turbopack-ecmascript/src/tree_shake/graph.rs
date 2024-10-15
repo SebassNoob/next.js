@@ -561,6 +561,11 @@ impl DepGraph {
                     }
                 }
 
+                // Do not store export * in internal part fragments.
+                if let ModuleItem::ModuleDecl(ModuleDecl::ExportAll(..)) = &data[g].content {
+                    continue;
+                }
+
                 chunk.body.push(data[g].content.clone());
             }
 
