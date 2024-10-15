@@ -1,5 +1,5 @@
 use anyhow::Result;
-use turbo_tasks::{RcStr, Vc};
+use turbo_tasks::{vdbg, RcStr, ValueToString, Vc};
 use turbo_tasks_fs::glob::Glob;
 use turbopack_core::{
     asset::{Asset, AssetContent},
@@ -146,6 +146,11 @@ impl EcmascriptModulePartAsset {
                 if *new_export == export_name {
                     let side_effects = side_effects.await?.to_vec();
 
+                    vdbg!("side effects");
+                    for side_effect in side_effects.iter() {
+                        vdbg!(side_effect.ident().to_string().await?);
+                    }
+
                     return Ok(Vc::upcast(
                         SideEffectsModule {
                             module: *final_module,
@@ -201,11 +206,14 @@ impl Module for SideEffectsModule {
         let mut references = vec![];
 
         for &side_effect in self.side_effects.await?.iter() {
+            vdbg!(side_effect.ident().to_string().await?);
             references.push(Vc::upcast(SingleModuleReference::new(
                 Vc::upcast(side_effect),
                 Vc::cell(RcStr::from("side effect")),
             )));
         }
+
+        vdbg!(self.module.ident().to_string().await?);
 
         references.push(Vc::upcast(SingleModuleReference::new(
             Vc::upcast(self.module),
@@ -249,6 +257,8 @@ async fn follow_reexports_with_side_effects(
             export_name,
             ty,
         } = &*result.await?;
+
+        dbg!("ty", ty);
 
         match ty {
             FoundExportType::SideEffects => {
