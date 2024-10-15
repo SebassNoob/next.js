@@ -1,9 +1,11 @@
 use anyhow::Result;
-use turbo_tasks::{RcStr, ValueToString, Vc};
+use turbo_tasks::{vdbg, RcStr, ValueDefault, ValueToString, Vc};
 use turbo_tasks_fs::glob::Glob;
 use turbopack_core::{
     asset::{Asset, AssetContent},
-    chunk::{AsyncModuleInfo, ChunkableModule, ChunkingContext, EvaluatableAsset},
+    chunk::{
+        AsyncModuleInfo, ChunkItem, ChunkType, ChunkableModule, ChunkingContext, EvaluatableAsset,
+    },
     context::AssetContext,
     ident::AssetIdent,
     module::Module,
@@ -15,7 +17,10 @@ use super::{
     chunk_item::EcmascriptModulePartChunkItem, part_of_module, split, split_module, SplitResult,
 };
 use crate::{
-    chunk::{EcmascriptChunkPlaceable, EcmascriptExports},
+    chunk::{
+        EcmascriptChunkItem, EcmascriptChunkItemContent, EcmascriptChunkPlaceable,
+        EcmascriptChunkType, EcmascriptExports,
+    },
     parse::ParseResult,
     references::{
         analyse_ecmascript_module, esm::FoundExportType, follow_reexports, FollowExportsResult,
@@ -244,6 +249,52 @@ impl EcmascriptChunkPlaceable for SideEffectsModule {
     }
 }
 
+#[turbo_tasks::value]
+struct SideEffectsModuleChunkItem {
+    module: Vc<SideEffectsModule>,
+    chunking_context: Vc<Box<dyn ChunkingContext>>,
+}
+
+#[turbo_tasks::value_impl]
+impl ChunkItem for SideEffectsModuleChunkItem {
+    #[turbo_tasks::function]
+    fn references(&self) -> Vc<ModuleReferences> {
+        self.module.references()
+    }
+
+    #[turbo_tasks::function]
+    fn asset_ident(&self) -> Vc<AssetIdent> {
+        self.module.ident()
+    }
+
+    #[turbo_tasks::function]
+    fn ty(&self) -> Vc<Box<dyn ChunkType>> {
+        Vc::upcast(EcmascriptChunkType::value_default())
+    }
+
+    #[turbo_tasks::function]
+    fn module(&self) -> Vc<Box<dyn Module>> {
+        Vc::upcast(self.module)
+    }
+
+    #[turbo_tasks::function]
+    fn chunking_context(&self) -> Vc<Box<dyn ChunkingContext>> {
+        self.chunking_context
+    }
+}
+#[turbo_tasks::value_impl]
+impl EcmascriptChunkItem for SideEffectsModuleChunkItem {
+    #[turbo_tasks::function]
+    fn content(self: Vc<Self>) -> Vc<EcmascriptChunkItemContent> {
+        panic!("content() should never be called");
+    }
+
+    #[turbo_tasks::function]
+    fn chunking_context(&self) -> Vc<Box<dyn ChunkingContext>> {
+        self.chunking_context
+    }
+}
+
 #[turbo_tasks::value_impl]
 impl ChunkableModule for SideEffectsModule {
     #[turbo_tasks::function]
@@ -251,12 +302,13 @@ impl ChunkableModule for SideEffectsModule {
         self: Vc<Self>,
         chunking_context: Vc<Box<dyn ChunkingContext>>,
     ) -> Result<Vc<Box<dyn turbopack_core::chunk::ChunkItem>>> {
-        Ok(
-            Vc::try_resolve_sidecast::<Box<dyn ChunkableModule>>(self.await?.module)
-                .await?
-                .unwrap()
-                .as_chunk_item(chunking_context),
-        )
+        Ok(Vc::upcast(
+            SideEffectsModuleChunkItem {
+                module: self,
+                chunking_context,
+            }
+            .cell(),
+        ))
     }
 }
 
@@ -283,12 +335,13 @@ async fn follow_reexports_with_side_effects(
     let mut current_module = module;
     let mut current_export_name = export_name;
     let result = loop {
-        if !*current_module
+        let ignore = !*current_module
             .is_marked_as_side_effect_free(side_effect_free_packages)
-            .await?
-        {
+            .await?;
+        if ignore {
             side_effects.push(current_module);
         }
+        vdbg!(ignore, current_module.ident().to_string().await?);
 
         // We ignore the side effect of the entry module here, because we need to proceed.
         let result = follow_reexports(
@@ -303,6 +356,8 @@ async fn follow_reexports_with_side_effects(
             export_name,
             ty,
         } = &*result.await?;
+
+        vdbg!(ty, module.ident().to_string().await?);
 
         match ty {
             FoundExportType::SideEffects => {
