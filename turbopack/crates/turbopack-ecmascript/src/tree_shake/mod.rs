@@ -356,13 +356,6 @@ async fn get_part_id(result: &SplitResult, part: Vc<ModulePart>) -> Result<u32> 
         return Ok(*id);
     }
 
-    // This is required to handle `export * from 'foo'`
-    if let ModulePart::Export(..) = &*part {
-        if let Some(&v) = entrypoints.get(&Key::Exports) {
-            return Ok(v);
-        }
-    }
-
     let mut dump = String::new();
 
     for (idx, m) in modules.iter().enumerate() {
@@ -502,6 +495,12 @@ pub(super) async fn split(
                 modules,
                 star_reexports,
             } = dep_graph.split_module(&directives, &items);
+
+            dbg!(&entrypoints);
+            eprintln!("# Program ({name}):\n{}", to_code(program));
+            for (idx, m) in modules.iter().enumerate() {
+                eprintln!("# Module #{idx}:\n{}", to_code(m));
+            }
 
             assert_ne!(modules.len(), 0, "modules.len() == 0;\nModule: {module:?}",);
 
