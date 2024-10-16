@@ -160,6 +160,9 @@ impl EcmascriptModulePartAsset {
             };
 
             let side_effects = side_effects.await?.to_vec();
+            if side_effects.is_empty() {
+                return Ok(Vc::upcast(final_module));
+            }
 
             return Ok(Vc::upcast(
                 SideEffectsModule {
@@ -251,7 +254,7 @@ impl EcmascriptChunkPlaceable for SideEffectsModule {
 
     #[turbo_tasks::function]
     async fn is_marked_as_side_effect_free(self: Vc<Self>, _: Vc<Glob>) -> Vc<bool> {
-        Vc::cell(true)
+        Vc::cell(false)
     }
 }
 
