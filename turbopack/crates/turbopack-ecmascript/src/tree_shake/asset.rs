@@ -165,7 +165,7 @@ impl EcmascriptModulePartAsset {
                 SideEffectsModule {
                     export_name: *export,
                     new_name: new_export.clone().map(|v| Vc::cell(v)),
-                    module: final_module,
+                    binding: final_module,
                     side_effects: Vc::cell(side_effects),
                 }
                 .cell(),
@@ -190,7 +190,7 @@ impl EcmascriptModulePartAsset {
 
 #[turbo_tasks::value]
 pub(super) struct SideEffectsModule {
-    pub module: Vc<Box<dyn EcmascriptChunkPlaceable>>,
+    pub binding: Vc<Box<dyn EcmascriptChunkPlaceable>>,
     pub export_name: Vc<RcStr>,
     pub new_name: Option<Vc<RcStr>>,
     pub side_effects: Vc<SideEffects>,
@@ -200,7 +200,7 @@ pub(super) struct SideEffectsModule {
 impl Module for SideEffectsModule {
     #[turbo_tasks::function]
     fn ident(&self) -> Vc<AssetIdent> {
-        self.module
+        self.binding
             .ident()
             .with_modifier(Vc::cell(RcStr::from("with intermediate side-effects")))
     }
@@ -217,7 +217,7 @@ impl Module for SideEffectsModule {
         }
 
         references.push(Vc::upcast(SingleModuleReference::new(
-            Vc::upcast(self.module),
+            Vc::upcast(self.binding),
             Vc::cell(RcStr::from("target binding")),
         )));
 
@@ -237,7 +237,7 @@ impl Asset for SideEffectsModule {
 impl EcmascriptChunkPlaceable for SideEffectsModule {
     #[turbo_tasks::function]
     async fn get_exports(&self) -> Vc<EcmascriptExports> {
-        self.module.get_exports()
+        self.binding.get_exports()
     }
 
     #[turbo_tasks::function]
