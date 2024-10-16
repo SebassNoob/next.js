@@ -166,8 +166,6 @@ impl EcmascriptModulePartAsset {
 
             return Ok(Vc::upcast(
                 SideEffectsModule {
-                    export_name: *export,
-                    new_name: new_export.clone().map(|v| Vc::cell(v)),
                     binding: final_module,
                     side_effects: Vc::cell(side_effects),
                 }
@@ -194,8 +192,6 @@ impl EcmascriptModulePartAsset {
 #[turbo_tasks::value]
 pub(super) struct SideEffectsModule {
     pub binding: Vc<Box<dyn EcmascriptChunkPlaceable>>,
-    pub export_name: Vc<RcStr>,
-    pub new_name: Option<Vc<RcStr>>,
     pub side_effects: Vc<SideEffects>,
 }
 
