@@ -459,8 +459,11 @@ export async function handleRouteType({
                 pages: [page],
               }
             },
-            () => {
-              return { action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE }
+            (e) => {
+              return {
+                action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE,
+                data: `error in ${page} data subscription: ${e}`,
+              }
             }
           )
           hooks?.subscribeToChanges(
@@ -472,8 +475,11 @@ export async function handleRouteType({
                 event: HMR_ACTIONS_SENT_TO_BROWSER.CLIENT_CHANGES,
               }
             },
-            () => {
-              return { action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE }
+            (e) => {
+              return {
+                action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE,
+                data: `error in ${page} html subscription: ${e}`,
+              }
             }
           )
           if (entrypoints.global.document) {
@@ -482,10 +488,16 @@ export async function handleRouteType({
               false,
               entrypoints.global.document,
               () => {
-                return { action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE }
+                return {
+                  action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE,
+                  data: '_document has changed (page route)',
+                }
               },
-              () => {
-                return { action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE }
+              (e) => {
+                return {
+                  action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE,
+                  data: `error in _document subscription (page route): ${e}`,
+                }
               }
             )
           }
@@ -1055,6 +1067,7 @@ export async function handlePagesErrorRoute({
         () => {
           return {
             action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE,
+            data: '_app has changed (error route)',
           }
         }
       )
@@ -1076,10 +1089,16 @@ export async function handlePagesErrorRoute({
         false,
         entrypoints.global.document,
         () => {
-          return { action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE }
+          return {
+            action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE,
+            data: '_document has changed (error route)',
+          }
         },
-        () => {
-          return { action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE }
+        (e) => {
+          return {
+            action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE,
+            data: `error in _document subscription (error route): ${e}`,
+          }
         }
       )
     }
@@ -1102,8 +1121,11 @@ export async function handlePagesErrorRoute({
           // https://github.com/vercel/next.js/blob/08d7a7e5189a835f5dcb82af026174e587575c0e/packages/next/src/client/page-bootstrap.ts#L69-L71
           return { event: HMR_ACTIONS_SENT_TO_BROWSER.CLIENT_CHANGES }
         },
-        () => {
-          return { action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE }
+        (e) => {
+          return {
+            action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD_PAGE,
+            data: `error in _error subscription: ${e}`,
+          }
         }
       )
     }
