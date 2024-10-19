@@ -1194,11 +1194,11 @@ impl NextConfig {
             Some(false) => Some(TreeShakingMode::ReexportsOnly),
             Some(true) => Some(TreeShakingMode::ModuleFragments),
             None => {
-                if is_development {
-                    Some(TreeShakingMode::ReexportsOnly)
-                } else {
-                    Some(TreeShakingMode::ModuleFragments)
-                }
+                // if is_development {
+                Some(TreeShakingMode::ReexportsOnly)
+                // } else {
+                //     Some(TreeShakingMode::ModuleFragments)
+                // }
             }
         })
         .cell()
@@ -1216,11 +1216,11 @@ impl NextConfig {
             Some(false) => Some(TreeShakingMode::ReexportsOnly),
             Some(true) => Some(TreeShakingMode::ModuleFragments),
             None => {
-                if is_development {
-                    Some(TreeShakingMode::ReexportsOnly)
-                } else {
-                    Some(TreeShakingMode::ModuleFragments)
-                }
+                // if is_development {
+                Some(TreeShakingMode::ReexportsOnly)
+                // } else {
+                //     Some(TreeShakingMode::ModuleFragments)
+                // }
             }
         })
         .cell()
